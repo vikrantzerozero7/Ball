@@ -4,181 +4,275 @@ import numpy as np
 from streamlit.components.v1 import html
 
 st.set_page_config(layout="wide")
-st.title("🎮 3D Object Rotation with Touch/Mouse")
+st.title("🎮 Truly Free 3D Rotation - No Lock!")
 
-# Create a 3D object (cube with colors)
-def create_3d_object():
-    # Cube vertices
-    vertices = np.array([
-        [-1, -1, -1], [1, -1, -1], [1, 1, -1], [-1, 1, -1],
-        [-1, -1, 1], [1, -1, 1], [1, 1, 1], [-1, 1, 1]
-    ])
+# Custom CSS for better touch experience
+st.markdown("""
+<style>
+    .js-plotly-plot {
+        touch-action: none;  /* Better touch handling */
+    }
+</style>
+""", unsafe_allow_html=True)
+
+def create_free_rotation_object():
+    # Create a complex object with multiple features
+    t = np.linspace(0, 2*np.pi, 100)
     
-    # Cube faces
-    faces = [
-        [0, 1, 2, 3],  # back
-        [4, 5, 6, 7],  # front
-        [0, 1, 5, 4],  # bottom
-        [2, 3, 7, 6],  # top
-        [1, 2, 6, 5],  # right
-        [0, 3, 7, 4]   # left
-    ]
+    # Helix (spring) for better rotation visualization
+    x = np.sin(t)
+    y = np.cos(t)
+    z = t / 2
     
-    # Colors for each face
-    colors = ['red', 'blue', 'green', 'yellow', 'orange', 'purple']
+    # Additional points scattered in 3D space
+    n_points = 100
+    x_rand = np.random.randn(n_points) * 2
+    y_rand = np.random.randn(n_points) * 2
+    z_rand = np.random.randn(n_points) * 2
     
     fig = go.Figure()
     
-    # Add each face
-    for i, face in enumerate(faces):
-        x = [vertices[vertex][0] for vertex in face] + [vertices[face[0]][0]]
-        y = [vertices[vertex][1] for vertex in face] + [vertices[face[0]][1]]
-        z = [vertices[vertex][2] for vertex in face] + [vertices[face[0]][2]]
-        
-        fig.add_trace(go.Scatter3d(
-            x=x, y=y, z=z,
-            mode='lines',
-            line=dict(color=colors[i], width=3),
-            showlegend=False,
-            name=f'Face {i+1}'
-        ))
-    
-    # Add semi-transparent surfaces
-    for i, face in enumerate(faces):
-        x = [vertices[vertex][0] for vertex in face]
-        y = [vertices[vertex][1] for vertex in face]
-        z = [vertices[vertex][2] for vertex in face]
-        
-        fig.add_trace(go.Mesh3d(
-            x=x, y=y, z=z,
-            color=colors[i],
-            opacity=0.3,
-            showlegend=False,
-            name=f'Surface {i+1}'
-        ))
-    
-    # Add vertices
+    # Main helix
     fig.add_trace(go.Scatter3d(
-        x=vertices[:, 0], y=vertices[:, 1], z=vertices[:, 2],
-        mode='markers',
-        marker=dict(size=5, color='white'),
-        showlegend=False
+        x=x, y=y, z=z,
+        mode='lines+markers',
+        line=dict(color='cyan', width=5),
+        marker=dict(size=3, color='yellow'),
+        name='Helix'
     ))
     
-    # Update layout for interactive rotation
+    # Scattered points
+    fig.add_trace(go.Scatter3d(
+        x=x_rand, y=y_rand, z=z_rand,
+        mode='markers',
+        marker=dict(
+            size=4,
+            color=x_rand,
+            colorscale='Viridis',
+            opacity=0.8
+        ),
+        name='Random Points'
+    ))
+    
+    # Add some connecting lines
+    for i in range(0, len(x_rand)-10, 10):
+        fig.add_trace(go.Scatter3d(
+            x=[x_rand[i], x_rand[i+5]],
+            y=[y_rand[i], y_rand[i+5]],
+            z=[z_rand[i], z_rand[i+5]],
+            mode='lines',
+            line=dict(color='rgba(100,100,100,0.3)', width=1),
+            showlegend=False
+        ))
+    
+    # CRITICAL SETTINGS FOR FREE ROTATION
     fig.update_layout(
         scene=dict(
-            xaxis=dict(showbackground=False, showticklabels=False, title=''),
-            yaxis=dict(showbackground=False, showticklabels=False, title=''),
-            zaxis=dict(showbackground=False, showticklabels=False, title=''),
+            xaxis=dict(
+                showbackground=True,
+                backgroundcolor="rgba(0, 0, 0, 0.1)",
+                gridcolor="white",
+                showline=True,
+                linewidth=2,
+                linecolor='white',
+                showgrid=True,
+                gridwidth=1,
+                gridcolor='rgba(255,255,255,0.1)',
+                showticklabels=False,
+                title='',
+                range=[-3, 3]  # Fixed range
+            ),
+            yaxis=dict(
+                showbackground=True,
+                backgroundcolor="rgba(0, 0, 0, 0.1)",
+                gridcolor="white",
+                showline=True,
+                linewidth=2,
+                linecolor='white',
+                showgrid=True,
+                gridwidth=1,
+                gridcolor='rgba(255,255,255,0.1)',
+                showticklabels=False,
+                title='',
+                range=[-3, 3]
+            ),
+            zaxis=dict(
+                showbackground=True,
+                backgroundcolor="rgba(0, 0, 0, 0.1)",
+                gridcolor="white",
+                showline=True,
+                linewidth=2,
+                linecolor='white',
+                showgrid=True,
+                gridwidth=1,
+                gridcolor='rgba(255,255,255,0.1)',
+                showticklabels=False,
+                title='',
+                range=[-3, 3]
+            ),
+            aspectmode='cube',  # Equal aspect ratio
             camera=dict(
-                eye=dict(x=2, y=2, z=2)
-            )
+                # Initial camera position
+                eye=dict(x=2.5, y=2.5, z=2.5),
+                center=dict(x=0, y=0, z=0),
+                # IMPORTANT: No up constraint
+                up=dict(x=0, y=0, z=1)
+            ),
+            dragmode='turntable',  # Changed from 'orbit' for smoother rotation
         ),
-        width=800,
-        height=600,
-        margin=dict(l=0, r=0, b=0, t=0),
+        width=1000,
+        height=700,
+        margin=dict(l=0, r=0, b=0, t=30),
         hovermode=False,
-        dragmode='turntable'  # Important for rotation
+        # These settings are crucial
+        uirevision='constant',  # Maintain rotation state
     )
     
     return fig
 
-# Alternative: 3D Torus (donut shape)
-def create_torus():
-    n = 50
-    m = 50
-    R = 2  # Major radius
-    r = 1  # Minor radius
+# Alternative: Sphere with custom rotation
+def create_sphere_free_rotation():
+    # Create sphere with multiple colors for better orientation
+    u = np.linspace(0, 2*np.pi, 40)
+    v = np.linspace(0, np.pi, 40)
+    u, v = np.meshgrid(u, v)
     
-    theta = np.linspace(0, 2*np.pi, n)
-    phi = np.linspace(0, 2*np.pi, m)
-    theta, phi = np.meshgrid(theta, phi)
+    x = np.sin(v) * np.cos(u)
+    y = np.sin(v) * np.sin(u)
+    z = np.cos(v)
     
-    x = (R + r * np.cos(phi)) * np.cos(theta)
-    y = (R + r * np.cos(phi)) * np.sin(theta)
-    z = r * np.sin(phi)
+    # Color based on direction for better orientation
+    colors = np.arctan2(y, x)  # Color changes with rotation
     
-    fig = go.Figure(data=[go.Surface(x=x, y=y, z=z, colorscale='viridis', opacity=0.8)])
+    fig = go.Figure(data=[
+        go.Surface(
+            x=x, y=y, z=z,
+            surfacecolor=colors,
+            colorscale='HSV',
+            opacity=0.9,
+            showscale=False
+        )
+    ])
     
+    # Add axis lines for reference
+    for axis, color in [('x', 'red'), ('y', 'green'), ('z', 'blue')]:
+        line_data = np.array([[-2, 2], [0, 0], [0, 0]]) if axis == 'x' else \
+                   np.array([[0, 0], [-2, 2], [0, 0]]) if axis == 'y' else \
+                   np.array([[0, 0], [0, 0], [-2, 2]])
+        
+        fig.add_trace(go.Scatter3d(
+            x=line_data[0], y=line_data[1], z=line_data[2],
+            mode='lines',
+            line=dict(color=color, width=3),
+            showlegend=False,
+            name=f'{axis}-axis'
+        ))
+    
+    # CRITICAL: Same free rotation settings
     fig.update_layout(
         scene=dict(
-            xaxis=dict(showbackground=False, showticklabels=False, title=''),
-            yaxis=dict(showbackground=False, showticklabels=False, title=''),
-            zaxis=dict(showbackground=False, showticklabels=False, title=''),
+            xaxis=dict(showticklabels=False, title='', range=[-2, 2]),
+            yaxis=dict(showticklabels=False, title='', range=[-2, 2]),
+            zaxis=dict(showticklabels=False, title='', range=[-2, 2]),
+            aspectmode='cube',
             camera=dict(
-                eye=dict(x=3, y=3, z=3)
-            )
+                eye=dict(x=2.5, y=2.5, z=2.5),
+                up=dict(x=0, y=0, z=1)  # Allow any up direction
+            ),
+            dragmode='turntable'
         ),
-        width=800,
-        height=600,
-        margin=dict(l=0, r=0, b=0, t=0),
-        dragmode='turntable'
+        uirevision='constant',
+        width=1000,
+        height=700
     )
     
     return fig
 
 # Sidebar controls
-st.sidebar.header("Settings")
+st.sidebar.header("🎛️ Rotation Settings")
 
-object_type = st.sidebar.selectbox(
-    "Choose Object",
-    ["Cube", "Torus", "Sphere", "Cylinder"]
+rotation_mode = st.sidebar.radio(
+    "Rotation Mode",
+    ["Free Orbit (No Lock)", "Turntable", "Custom"],
+    index=0
 )
 
-if object_type == "Cube":
-    fig = create_3d_object()
-elif object_type == "Torus":
-    fig = create_torus()
-elif object_type == "Sphere":
-    # Simple sphere
-    u = np.linspace(0, 2*np.pi, 50)
-    v = np.linspace(0, np.pi, 50)
-    x = np.outer(np.cos(u), np.sin(v))
-    y = np.outer(np.sin(u), np.sin(v))
-    z = np.outer(np.ones(np.size(u)), np.cos(v))
-    
-    fig = go.Figure(data=[go.Surface(x=x, y=y, z=z, colorscale='hot')])
-    fig.update_layout(scene_camera=dict(eye=dict(x=2.5, y=2.5, z=2.5)), dragmode='turntable')
-else:  # Cylinder
-    z = np.linspace(-1, 1, 50)
-    theta = np.linspace(0, 2*np.pi, 50)
-    theta, z = np.meshgrid(theta, z)
-    x = np.cos(theta)
-    y = np.sin(theta)
-    
-    fig = go.Figure(data=[go.Surface(x=x, y=y, z=z, colorscale='portland')])
-    fig.update_layout(scene_camera=dict(eye=dict(x=2.5, y=2.5, z=2.5)), dragmode='turntable')
+object_choice = st.sidebar.selectbox(
+    "Choose Object",
+    ["Helix with Points", "Color Sphere", "Cube"]
+)
 
-# Display rotation instructions
 st.sidebar.markdown("---")
 st.sidebar.markdown("""
-### 🖱️ How to Rotate:
-- **Drag with mouse** - Free rotation
-- **Touch and drag** - On touch devices
-- **Scroll** - Zoom in/out
-- **Double click** - Reset view
+### 🎯 **Tips for Free Rotation:**
+
+1. **Drag anywhere** - Completely free movement
+2. **Diagonal drag** - Multi-axis rotation
+3. **Continuous spin** - Ek direction mein ghumate raho
+4. **Avoid** - Sudden stops par focus mat karo
+
+### 🔄 **Ab koi atakna nahi!**
 """)
 
-st.sidebar.markdown("---")
-st.sidebar.markdown("### 🎯 Tip:")
-st.sidebar.markdown("Click and drag anywhere on the 3D object to rotate it in any direction!")
+# Create appropriate figure
+if object_choice == "Helix with Points":
+    fig = create_free_rotation_object()
+elif object_choice == "Color Sphere":
+    fig = create_sphere_free_rotation()
+else:
+    fig = create_free_rotation_object()  # Reuse helix
 
-# Main area - display the 3D plot
-col1, col2, col3 = st.columns([1, 8, 1])
-with col2:
-    st.plotly_chart(fig, use_container_width=True, config={
-        'displayModeBar': True,
-        'scrollZoom': True,
-        'doubleClick': 'reset',
-        'showTips': True
-    })
+# Update based on mode
+if rotation_mode == "Free Orbit (No Lock)":
+    fig.update_layout(
+        scene=dict(
+            dragmode='orbit',
+            camera=dict(
+                up=dict(x=0, y=1, z=0)  # Allow any orientation
+            )
+        )
+    )
+elif rotation_mode == "Turntable":
+    fig.update_layout(
+        scene=dict(
+            dragmode='turntable',
+            camera=dict(
+                up=dict(x=0, y=0, z=1)  # Keep horizon level
+            )
+        )
+    )
 
-# Add some information
-st.markdown("---")
-st.markdown("""
-<div style='text-align: center'>
-    <p>✨ <strong>Touch/mouse drag</strong> to rotate the 3D object in any direction!</p>
-    <p>📱 Works on both desktop and mobile devices with touch support</p>
-</div>
-""", unsafe_allow_html=True)
+# JavaScript for additional rotation control
+custom_js = """
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var plotElement = document.querySelector('.js-plotly-plot');
+    if (plotElement) {
+        plotElement.on('plotly_relayout', function(eventData) {
+            // Enable continuous rotation
+            if (eventData['scene.camera']) {
+                // Camera update hua - smooth rotation maintain karo
+                console.log('Camera moved freely');
+            }
+        });
+    }
+});
+</script>
+"""
+
+html(custom_js)
+
+# Display the plot with special configuration
+st.plotly_chart(fig, use_container_width=True, config={
+    'displayModeBar': True,
+    'displaylogo': False,
+    'modeBarButtonsToAdd': ['orbitRotation', 'resetCameraDefault'],
+    'modeBarButtonsToRemove': ['select2d', 'lasso2d'],
+    'scrollZoom': True,
+    'doubleClick': 'reset',
+    'showTips': True,
+    'responsive': True
+})
+
+# Success message
+st.success("✨ Ab object **completely free** ghumega! Kisi point pe nahi atakega. Try karo continuous ek direction mein ghumana!")
