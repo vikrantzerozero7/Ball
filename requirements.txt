@@ -1,6 +1,3 @@
 streamlit
 plotly
-pyvista
-streamlit_pyvista
-stpyvista
-trafo
+pytransform3d
