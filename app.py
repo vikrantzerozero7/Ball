@@ -1,24 +1,20 @@
 import streamlit as st
 import pyvista as pv
-from pyvista import examples
-from streamlit_pyvista import st_pyvista
 
-st.set_page_config(page_title="PyVista 3D Cube", layout="centered")
-st.title("Fully Free-Rotate 3D Cube (Mouse / Touch)")
+st.title("Fully Free-Rotate 3D Cube with PyVista")
 
 # Create cube
 cube = pv.Cube()
 
-# Add hover info by using labels
-labels = [f"Vertex {i}" for i in range(cube.points.shape[0])]
-
-# Create Plotter
-plotter = pv.Plotter(notebook=False, off_screen=True)
+# Plotter
+plotter = pv.Plotter(off_screen=True)
 plotter.add_mesh(cube, color="lightblue", opacity=0.6)
-plotter.add_point_labels(cube.points, labels, point_size=10, font_size=10, text_color="blue")
+plotter.enable_trackball_style()  # free rotation
 
-# Enable interactive rotation, zoom, pan
-plotter.enable_trackball_style()  # free rotation in all directions
+# Export interactive HTML
+html_file = "cube.html"
+plotter.show(jupyter_backend="static", auto_close=False, window_size=[400, 400])
+plotter.export_html(html_file)
 
-# Render in Streamlit
-st_pyvista(plotter, key="cube")
+# Render in Streamlit via iframe
+st.components.v1.iframe(src=html_file, width=500, height=500)
