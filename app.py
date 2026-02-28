@@ -1,58 +1,25 @@
 import streamlit as st
-from streamlit.components.v1 import html
+from vedo import *
+import numpy as np
 
-three_js_code = """
-<!DOCTYPE html>
-<html>
-<head>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three-orbitcontrols@2.110.3/OrbitControls.min.js"></script>
-</head>
-<body style="margin: 0; overflow: hidden;">
-    <script>
-        // Scene setup
-        const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer({antialias: true});
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        document.body.appendChild(renderer.domElement);
-        
-        // OrbitControls with arcball behavior (no gimbal lock)
-        const controls = new THREE.OrbitControls(camera, renderer.domElement);
-        controls.enableDamping = true;
-        controls.enableZoom = true;
-        controls.rotateSpeed = 1.0;
-        controls.enablePan = true;
-        
-        // Add a cube
-        const geometry = new THREE.BoxGeometry(2, 2, 2);
-        const material = new THREE.MeshNormalMaterial();
-        const cube = new THREE.Mesh(geometry, material);
-        scene.add(cube);
-        
-        // Add axes helper
-        const axesHelper = new THREE.AxesHelper(3);
-        scene.add(axesHelper);
-        
-        camera.position.z = 5;
-        
-        // Animation loop
-        function animate() {
-            requestAnimationFrame(animate);
-            controls.update(); // Only update from user interaction
-            renderer.render(scene, camera);
-        }
-        animate();
-        
-        // Handle resize
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
-    </script>
-</body>
-</html>
-"""
+st.title("🎨 Vedo - Scientific Visualization")
 
-st.components.v1.html(three_js_code, height=600)
+# Create a complex object
+sphere = Sphere(pos=(0,0,0), r=1, c='blue', alpha=0.5)
+cube = Cube(pos=(0,0,0), side=1.5, c='red', alpha=0.3)
+
+# Combine objects
+objects = sphere + cube
+
+# Add axes
+axes = Axes(xrange=(-2,2), yrange=(-2,2), zrange=(-2,2))
+
+# Create plotter
+plt = Plotter(axes=1, offscreen=True)
+plt.show(objects, axes, viewup='z')
+
+# Convert to numpy array for Streamlit
+img = plt.screenshot(asarray=True)
+st.image(img, caption="3D Object (Static)")
+
+# Note: For interactive, you'd need vedo's browser backend
