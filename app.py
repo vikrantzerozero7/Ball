@@ -1,6 +1,6 @@
 import streamlit as st
 import numpy as np
-from trafo import Vector, Rotation, Trafo
+from trafo import Variable,Vector, Rotation, Trafo
 import plotly.graph_objects as go
 
 st.title("⚡ trafo - Quaternion Math Demo")
