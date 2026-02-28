@@ -1,21 +1,22 @@
-import streamlit as st
 import numpy as np
-from trafo import Variable,Vector, Rotation, Trafo
-import plotly.graph_objects as go
+from pytransform3d import rotations as pr
+import streamlit as st
 
-st.title("⚡ trafo - Quaternion Math Demo")
+st.title("🔬 pytransform3d - Gimbal Lock Analysis")
 
-# Create rotation using quaternions (no gimbal lock!)
-rot_x = Rotation.from_axis_angle(Vector.ex(), np.pi/4)  # 45° around X
-rot_y = Rotation.from_axis_angle(Vector.ey(), np.pi/3)  # 60° around Y
-rot_z = Rotation.from_axis_angle(Variable.ez(), np.pi/6)  # 30° around Z
+# Check if angles are near gimbal lock
+angles = np.array([np.pi/2, 0.1, 0.2])  # Euler angles
 
-# Combine rotations
-combined_rot = rot_x * rot_y * rot_z
+# Check for gimbal lock
+is_near_lock = pr.euler_near_gimbal_lock(
+    angles, 
+    i=0, j=1, k=2,  # Axis order
+    tolerance=1e-6
+)
 
-# Apply to a point
-point = Vector(1, 0, 0)
-rotated_point = combined_rot.apply(point)
+st.write(f"Angles: {angles}")
+st.write(f"Near Gimbal Lock: {is_near_lock}")
 
-st.write(f"Original point: (1, 0, 0)")
-st.write(f"Rotated point: ({rotated_point.x:.2f}, {rotated_point.y:.2f}, {rotated_point.z:.2f})")
+# Convert to quaternion (safe representation)
+q = pr.quaternion_from_euler(angles, 0, 1, 2)
+st.write(f"Quaternion: {q}")
