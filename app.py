@@ -1,18 +1,17 @@
-import matplotlib.pyplot as plt
-import numpy as np
+import streamlit as st
+import pyvista as pv
+from stpyvista import stpyvista
 
-# Set rotation style to arcball (lock-free)
-plt.rcParams['axes3d.mouserotationstyle'] = 'arcball'  # 'sphere', 'trackball', or 'arcball'
+# Create a plotter
+plotter = pv.Plotter(window_size=[800, 600])
+plotter.background_color = 'white'
 
-fig = plt.figure()
-ax = fig.add_subplot(111, projection='3d')
+# Create a mesh (cube, sphere, etc.)
+mesh = pv.Cube()
+plotter.add_mesh(mesh, color='cyan', opacity=0.6)
 
-# Create your 3D object
-u = np.linspace(0, 2 * np.pi, 100)
-v = np.linspace(0, np.pi, 100)
-x = np.outer(np.cos(u), np.sin(v))
-y = np.outer(np.sin(u), np.sin(v))
-z = np.outer(np.ones(np.size(u)), np.cos(v))
+# Add axes for reference
+plotter.show_bounds(grid=True)
 
-ax.plot_surface(x, y, z, cmap='viridis')
-plt.show()
+# Display in Streamlit
+stpyvista(plotter, key="pv_cube")
