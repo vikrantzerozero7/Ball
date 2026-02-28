@@ -1,25 +1,21 @@
 import streamlit as st
-from vedo import *
 import numpy as np
+from trafo import Vector, Rotation, Trafo
+import plotly.graph_objects as go
 
-st.title("🎨 Vedo - Scientific Visualization")
+st.title("⚡ trafo - Quaternion Math Demo")
 
-# Create a complex object
-sphere = Sphere(pos=(0,0,0), r=1, c='blue', alpha=0.5)
-cube = Cube(pos=(0,0,0), side=1.5, c='red', alpha=0.3)
+# Create rotation using quaternions (no gimbal lock!)
+rot_x = Rotation.from_axis_angle(Vector.ex(), np.pi/4)  # 45° around X
+rot_y = Rotation.from_axis_angle(Vector.ey(), np.pi/3)  # 60° around Y
+rot_z = Rotation.from_axis_angle(Variable.ez(), np.pi/6)  # 30° around Z
 
-# Combine objects
-objects = sphere + cube
+# Combine rotations
+combined_rot = rot_x * rot_y * rot_z
 
-# Add axes
-axes = Axes(xrange=(-2,2), yrange=(-2,2), zrange=(-2,2))
+# Apply to a point
+point = Vector(1, 0, 0)
+rotated_point = combined_rot.apply(point)
 
-# Create plotter
-plt = Plotter(axes=1, offscreen=True)
-plt.show(objects, axes, viewup='z')
-
-# Convert to numpy array for Streamlit
-img = plt.screenshot(asarray=True)
-st.image(img, caption="3D Object (Static)")
-
-# Note: For interactive, you'd need vedo's browser backend
+st.write(f"Original point: (1, 0, 0)")
+st.write(f"Rotated point: ({rotated_point.x:.2f}, {rotated_point.y:.2f}, {rotated_point.z:.2f})")
