@@ -1,3 +1,5 @@
 streamlit
 plotly
 pytransform3d
+pyvis
+networkx
