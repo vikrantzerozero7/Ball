@@ -1,75 +1,123 @@
-# app_expandable.py
 import streamlit as st
-import networkx as nx
-from pyvis.network import Network
-import tempfile
-import os
+from streamlit_option_menu import option_menu
+import json
 
-st.set_page_config(page_title="Ontology Explorer", layout="wide")
-st.title("Ontology Explorer with Expand/Collapse")
+class OntologyNode:
+    def __init__(self, name, children=None):
+        self.name = name
+        self.children = children if children else []
+        self.expanded = False
 
-# ------------------------
-# Sample Ontology Data
-# ------------------------
-ontology = {
-    "Person": {
-        "instances": ["V N", "Arya"],
-        "properties": {"hasAge": [25, 30], "hasRole": ["Student", "Teacher"]}
-    },
-    "Car": {
-        "instances": ["Tesla Model 3", "Toyota Corolla"],
-        "properties": {"isElectric": [True, False], "owner": ["V N", "Arya"]}
+def create_ontology_structure():
+    """Create a sample ontology structure"""
+    return {
+        "Thing": OntologyNode("Thing", [
+            OntologyNode("Physical Object", [
+                OntologyNode("Living Thing", [
+                    OntologyNode("Animal"),
+                    OntologyNode("Plant")
+                ]),
+                OntologyNode("Non-living Thing", [
+                    OntologyNode("Mineral"),
+                    OntologyNode("Artifact")
+                ])
+            ]),
+            OntologyNode("Abstract Entity", [
+                OntologyNode("Idea"),
+                OntologyNode("Concept", [
+                    OntologyNode("Mathematical Concept"),
+                    OntologyNode("Philosophical Concept")
+                ])
+            ])
+        ])
     }
-}
 
-# ------------------------
-# Sidebar for Class Selection
-# ------------------------
-st.sidebar.header("Select Ontology Class")
-selected_class = st.sidebar.selectbox("Class", list(ontology.keys()))
+def render_interactive_ontology(node_dict, level=0):
+    """Render interactive ontology with toggle buttons"""
+    for key, node in node_dict.items():
+        # Create unique key for each node
+        node_key = f"node_{key}_{level}_{id(node)}"
+        
+        # Create columns for layout
+        cols = st.columns([1, 1, 4])
+        
+        with cols[0]:
+            # Toggle button for expand/collapse
+            if node.children:
+                if st.button("▼" if node.expanded else "▶", key=f"toggle_{node_key}"):
+                    node.expanded = not node.expanded
+                    st.rerun()
+        
+        with cols[1]:
+            st.write("  " * level + "•")
+        
+        with cols[2]:
+            # Node name with styling
+            st.markdown(f"**{node.name}**" if node.children else f"  {node.name}")
+        
+        # Render children if expanded
+        if node.expanded and node.children:
+            for child in node.children:
+                render_interactive_ontology({child.name: child}, level + 1)
 
-# ------------------------
-# Expandable Tree View
-# ------------------------
-st.subheader(f"Ontology Tree for '{selected_class}'")
+def main():
+    st.set_page_config(layout="wide")
+    st.title("Interactive Ontology Viewer")
+    
+    # Initialize ontology in session state
+    if 'ontology' not in st.session_state:
+        st.session_state.ontology = create_ontology_structure()
+    
+    # Sidebar controls
+    with st.sidebar:
+        st.header("Controls")
+        
+        if st.button("Expand All"):
+            def expand_all(node_dict):
+                for node in node_dict.values():
+                    node.expanded = True
+                    if node.children:
+                        expand_all({child.name: child for child in node.children})
+            expand_all(st.session_state.ontology)
+            st.rerun()
+        
+        if st.button("Collapse All"):
+            def collapse_all(node_dict):
+                for node in node_dict.values():
+                    node.expanded = False
+                    if node.children:
+                        collapse_all({child.name: child for child in node.children})
+            collapse_all(st.session_state.ontology)
+            st.rerun()
+        
+        st.divider()
+        
+        # Search functionality
+        st.subheader("Search")
+        search_term = st.text_input("Search concepts")
+        
+        if search_term:
+            st.info(f"Searching for: {search_term}")
+    
+    # Main content
+    col1, col2 = st.columns([2, 1])
+    
+    with col1:
+        st.subheader("Ontology Tree")
+        render_interactive_ontology(st.session_state.ontology)
+    
+    with col2:
+        st.subheader("Node Details")
+        st.info("Click on nodes to see details")
+        
+        # Add some metadata display
+        st.markdown("""
+        **Legend:**
+        - ▶ : Collapsed node (click to expand)
+        - ▼ : Expanded node (click to collapse)
+        - **Bold**: Parent node with children
+        - Normal: Leaf node
+        """)
 
-class_info = ontology[selected_class]
-
-for i, instance in enumerate(class_info["instances"]):
-    with st.expander(f"Instance: {instance}"):
-        st.write("Properties:")
-        for prop, values in class_info["properties"].items():
-            st.write(f"- {prop}: {values[i]}")
-
-# ------------------------
-# Visualize Ontology as Graph
-# ------------------------
-st.subheader("Ontology Graph Visualization")
-
-# Create Graph
-G = nx.DiGraph()
-G.add_node(selected_class, color='lightblue', size=30)
-
-for i, instance in enumerate(class_info["instances"]):
-    G.add_node(instance, color='lightgreen', size=20)
-    G.add_edge(selected_class, instance, label="instanceOf")
-    for prop, values in class_info["properties"].items():
-        prop_node = f"{prop}: {values[i]}"
-        G.add_node(prop_node, color='orange', size=15)
-        G.add_edge(instance, prop_node, label=prop)
-
-# Pyvis network
-net = Network(height="600px", width="100%", directed=True)
-net.from_nx(G)
-net.repulsion(node_distance=150, central_gravity=0.2)
-
-# Save to temporary HTML file
-tmp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".html")
-net.save_graph(tmp_file.name)
-
-# Display in Streamlit
-HtmlFile = open(tmp_file.name, 'r', encoding='utf-8')
-components_html = HtmlFile.read()
-st.components.v1.html(components_html, height=650)
-HtmlFile.close()
-os.unlink(tmp_file.name)
+if __name__ == "__main__":
+    main()
