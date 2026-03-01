@@ -1,144 +1,180 @@
 import streamlit as st
-import streamlit.components.v1 as components
+from typing import Dict, List, Optional
+import time
 
-# For older Streamlit versions or custom tree
-def create_custom_ontology_tree():
-    """Create ontology with custom HTML/CSS tree"""
-    
-    ontology_html = """
-    <style>
-    .tree {
-        font-family: Arial, sans-serif;
-        margin-left: 20px;
-    }
-    .tree-node {
-        margin: 5px 0;
-        cursor: pointer;
-    }
-    .tree-node:hover {
-        background-color: #f0f0f0;
-    }
-    .tree-children {
-        margin-left: 20px;
-        display: none;
-    }
-    .tree-children.expanded {
-        display: block;
-    }
-    .toggle-btn {
-        display: inline-block;
-        width: 20px;
-        text-align: center;
-        cursor: pointer;
-        user-select: none;
-    }
-    .node-name {
-        display: inline-block;
-        padding: 2px 5px;
-    }
-    .node-name.parent {
-        font-weight: bold;
-    }
-    </style>
-    
-    <div class="tree" id="ontologyTree">
-        <div class="tree-node" onclick="toggleNode(this)">
-            <span class="toggle-btn">▶</span>
-            <span class="node-name parent">Thing</span>
-            <div class="tree-children">
-                <div class="tree-node" onclick="toggleNode(this)">
-                    <span class="toggle-btn">▶</span>
-                    <span class="node-name parent">Physical Object</span>
-                    <div class="tree-children">
-                        <div class="tree-node" onclick="toggleNode(this)">
-                            <span class="toggle-btn">▶</span>
-                            <span class="node-name parent">Living Thing</span>
-                            <div class="tree-children">
-                                <div class="tree-node">Animal</div>
-                                <div class="tree-node">Plant</div>
-                            </div>
-                        </div>
-                        <div class="tree-node" onclick="toggleNode(this)">
-                            <span class="toggle-btn">▶</span>
-                            <span class="node-name parent">Non-living Thing</span>
-                            <div class="tree-children">
-                                <div class="tree-node">Mineral</div>
-                                <div class="tree-node">Artifact</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="tree-node" onclick="toggleNode(this)">
-                    <span class="toggle-btn">▶</span>
-                    <span class="node-name parent">Abstract Entity</span>
-                    <div class="tree-children">
-                        <div class="tree-node">Idea</div>
-                        <div class="tree-node" onclick="toggleNode(this)">
-                            <span class="toggle-btn">▶</span>
-                            <span class="node-name parent">Concept</span>
-                            <div class="tree-children">
-                                <div class="tree-node">Mathematical Concept</div>
-                                <div class="tree-node">Philosophical Concept</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <script>
-    function toggleNode(element) {
-        var children = element.querySelector('.tree-children');
-        var toggleBtn = element.querySelector('.toggle-btn');
+class TreeNode:
+    def __init__(self, id: str, label: str, children: List['TreeNode'] = None, 
+                 node_type: str = "default", data: Dict = None):
+        self.id = id
+        self.label = label
+        self.children = children or []
+        self.node_type = node_type
+        self.data = data or {}
+        self.expanded = False
+        self.selected = False
+
+def create_file_system_style_ontology():
+    """Create ontology with file system style"""
+    return [
+        TreeNode("root1", "📁 Knowledge Base", [
+            TreeNode("node1", "📁 Sciences", [
+                TreeNode("node11", "📁 Physics", [
+                    TreeNode("node111", "📄 Classical Mechanics", 
+                            node_type="file", 
+                            data={"author": "Newton", "year": 1687}),
+                    TreeNode("node112", "📄 Quantum Physics",
+                            node_type="file",
+                            data={"author": "Various", "year": "1900s"})
+                ]),
+                TreeNode("node12", "📁 Chemistry", [
+                    TreeNode("node121", "📄 Organic Chemistry",
+                            node_type="file"),
+                    TreeNode("node122", "📄 Inorganic Chemistry",
+                            node_type="file")
+                ])
+            ]),
+            TreeNode("node2", "📁 Mathematics", [
+                TreeNode("node21", "📁 Algebra", [
+                    TreeNode("node211", "📄 Linear Algebra",
+                            node_type="file"),
+                    TreeNode("node212", "📄 Abstract Algebra",
+                            node_type="file")
+                ]),
+                TreeNode("node22", "📁 Calculus", [
+                    TreeNode("node221", "📄 Differential Calculus",
+                            node_type="file"),
+                    TreeNode("node222", "📄 Integral Calculus",
+                            node_type="file")
+                ])
+            ])
+        ], node_type="folder", data={"description": "Main knowledge base"}),
         
-        if (children) {
-            if (children.classList.contains('expanded')) {
-                children.classList.remove('expanded');
-                toggleBtn.textContent = '▶';
-            } else {
-                children.classList.add('expanded');
-                toggleBtn.textContent = '▼';
-            }
-        }
-    }
+        TreeNode("root2", "📁 Projects", [
+            TreeNode("node3", "📁 Active Projects", [
+                TreeNode("node31", "📄 Project Alpha",
+                        node_type="file",
+                        data={"status": "active", "priority": "high"}),
+                TreeNode("node32", "📄 Project Beta",
+                        node_type="file",
+                        data={"status": "active", "priority": "medium"})
+            ]),
+            TreeNode("node4", "📁 Archived Projects", [
+                TreeNode("node41", "📄 Old Project",
+                        node_type="file",
+                        data={"status": "archived", "year": 2023})
+            ])
+        ], node_type="folder")
+    ]
+
+def render_node_js_style(nodes: List[TreeNode], level: int = 0):
+    """Render tree in Node.js file explorer style"""
     
-    // Initialize all nodes
-    document.querySelectorAll('.tree-node').forEach(node => {
-        if (node.querySelector('.tree-children')) {
-            node.style.cursor = 'pointer';
-        }
-    });
-    </script>
-    """
-    
-    return ontology_html
+    for node in nodes:
+        # Create unique key
+        node_key = f"tree_{node.id}_{level}"
+        
+        # Create columns for layout
+        cols = st.columns([0.05, 0.05, 0.9])
+        
+        with cols[0]:
+            # Expand/collapse button for folders
+            if node.children:
+                icon = "▼" if node.expanded else "▶"
+                if st.button(icon, key=f"btn_{node_key}", help="Click to expand/collapse"):
+                    node.expanded = not node.expanded
+                    st.rerun()
+            else:
+                st.write("  ")
+        
+        with cols[1]:
+            # Hierarchy lines
+            st.markdown("│  " * level + "├─" if level > 0 else "")
+        
+        with cols[2]:
+            # Node content with hover effect
+            col_content, col_actions = st.columns([0.8, 0.2])
+            
+            with col_content:
+                # Node label with styling
+                if node.children:
+                    st.markdown(f"**{node.label}**")
+                else:
+                    st.markdown(node.label)
+            
+            with col_actions:
+                # Action buttons on hover (simulated with columns)
+                if st.button("ℹ️", key=f"info_{node_key}", help="Show details"):
+                    show_node_details(node)
+        
+        # Render children if expanded
+        if node.expanded and node.children:
+            render_node_js_style(node.children, level + 1)
+
+def show_node_details(node: TreeNode):
+    """Show node details in a modal/popup"""
+    with st.popover(f"Details: {node.label}"):
+        st.write(f"**ID:** {node.id}")
+        st.write(f"**Type:** {node.node_type}")
+        
+        if node.data:
+            st.write("**Data:**")
+            for key, value in node.data.items():
+                st.write(f"- {key}: {value}")
+        
+        if node.children:
+            st.write(f"**Children:** {len(node.children)}")
 
 def main():
-    st.title("Ontology Tree with Custom HTML/JS")
+    st.set_page_config(layout="wide", page_title="Node.js Style Ontology")
     
-    # Option to use custom HTML
-    use_custom = st.checkbox("Use Custom HTML Tree", value=True)
+    st.title("🌳 Node.js Style Ontology Explorer")
+    st.caption("Click ▶ to expand, ▼ to collapse, ℹ️ for details")
     
-    if use_custom:
-        # Embed custom HTML
-        components.html(create_custom_ontology_tree(), height=500)
-    else:
-        # Fallback to simple expander method
-        st.subheader("Simple Ontology")
-        with st.expander("Thing", expanded=False):
-            with st.expander("Physical Object", expanded=False):
-                with st.expander("Living Thing", expanded=False):
-                    st.write("• Animal")
-                    st.write("• Plant")
-                with st.expander("Non-living Thing", expanded=False):
-                    st.write("• Mineral")
-                    st.write("• Artifact")
-            with st.expander("Abstract Entity", expanded=False):
-                st.write("• Idea")
-                with st.expander("Concept", expanded=False):
-                    st.write("• Mathematical Concept")
-                    st.write("• Philosophical Concept")
+    # Initialize
+    if 'tree_nodes' not in st.session_state:
+        st.session_state.tree_nodes = create_file_system_style_ontology()
+    
+    # Toolbar
+    toolbar = st.container()
+    with toolbar:
+        cols = st.columns([1, 1, 1, 3])
+        
+        with cols[0]:
+            if st.button("🔄 Refresh", use_container_width=True):
+                st.rerun()
+        
+        with cols[1]:
+            if st.button("📂 Expand All", use_container_width=True):
+                def expand_all(nodes):
+                    for node in nodes:
+                        node.expanded = True
+                        if node.children:
+                            expand_all(node.children)
+                expand_all(st.session_state.tree_nodes)
+                st.rerun()
+        
+        with cols[2]:
+            if st.button("📁 Collapse All", use_container_width=True):
+                def collapse_all(nodes):
+                    for node in nodes:
+                        node.expanded = False
+                        if node.children:
+                            collapse_all(node.children)
+                collapse_all(st.session_state.tree_nodes)
+                st.rerun()
+        
+        with cols[3]:
+            st.text_input("🔍 Filter nodes...", key="filter", placeholder="Type to filter...")
+    
+    st.divider()
+    
+    # Main tree view
+    with st.container():
+        render_node_js_style(st.session_state.tree_nodes)
+    
+    # Status bar
+    st.divider()
+    st.caption(f"📍 Total root nodes: {len(st.session_state.tree_nodes)} | Click ▶ to explore")
 
 if __name__ == "__main__":
     main()
