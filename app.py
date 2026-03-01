@@ -1,4 +1,4 @@
-# app.py
+# app_expandable.py
 import streamlit as st
 import networkx as nx
 from pyvis.network import Network
@@ -6,7 +6,7 @@ import tempfile
 import os
 
 st.set_page_config(page_title="Ontology Explorer", layout="wide")
-st.title("Ontology Explorer App")
+st.title("Ontology Explorer with Expand/Collapse")
 
 # ------------------------
 # Sample Ontology Data
@@ -29,16 +29,17 @@ st.sidebar.header("Select Ontology Class")
 selected_class = st.sidebar.selectbox("Class", list(ontology.keys()))
 
 # ------------------------
-# Display Ontology Info
+# Expandable Tree View
 # ------------------------
-st.subheader(f"Class: {selected_class}")
-st.write("Instances and Properties:")
+st.subheader(f"Ontology Tree for '{selected_class}'")
 
 class_info = ontology[selected_class]
+
 for i, instance in enumerate(class_info["instances"]):
-    st.markdown(f"**Instance:** {instance}")
-    for prop, values in class_info["properties"].items():
-        st.write(f"- {prop}: {values[i]}")
+    with st.expander(f"Instance: {instance}"):
+        st.write("Properties:")
+        for prop, values in class_info["properties"].items():
+            st.write(f"- {prop}: {values[i]}")
 
 # ------------------------
 # Visualize Ontology as Graph
@@ -47,11 +48,8 @@ st.subheader("Ontology Graph Visualization")
 
 # Create Graph
 G = nx.DiGraph()
-
-# Add class node
 G.add_node(selected_class, color='lightblue', size=30)
 
-# Add instances and properties
 for i, instance in enumerate(class_info["instances"]):
     G.add_node(instance, color='lightgreen', size=20)
     G.add_edge(selected_class, instance, label="instanceOf")
@@ -64,6 +62,7 @@ for i, instance in enumerate(class_info["instances"]):
 net = Network(height="600px", width="100%", directed=True)
 net.from_nx(G)
 net.repulsion(node_distance=150, central_gravity=0.2)
+
 # Save to temporary HTML file
 tmp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".html")
 net.save_graph(tmp_file.name)
@@ -72,7 +71,5 @@ net.save_graph(tmp_file.name)
 HtmlFile = open(tmp_file.name, 'r', encoding='utf-8')
 components_html = HtmlFile.read()
 st.components.v1.html(components_html, height=650)
-
-# Cleanup
 HtmlFile.close()
 os.unlink(tmp_file.name)
