@@ -4,3 +4,4 @@ pytransform3d
 pyvis
 networkx
 streamlit_option_menu
+rdflib
