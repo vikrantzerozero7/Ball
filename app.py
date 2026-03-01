@@ -1,123 +1,144 @@
 import streamlit as st
-from streamlit_option_menu import option_menu
-import json
+import streamlit.components.v1 as components
 
-class OntologyNode:
-    def __init__(self, name, children=None):
-        self.name = name
-        self.children = children if children else []
-        self.expanded = False
-
-def create_ontology_structure():
-    """Create a sample ontology structure"""
-    return {
-        "Thing": OntologyNode("Thing", [
-            OntologyNode("Physical Object", [
-                OntologyNode("Living Thing", [
-                    OntologyNode("Animal"),
-                    OntologyNode("Plant")
-                ]),
-                OntologyNode("Non-living Thing", [
-                    OntologyNode("Mineral"),
-                    OntologyNode("Artifact")
-                ])
-            ]),
-            OntologyNode("Abstract Entity", [
-                OntologyNode("Idea"),
-                OntologyNode("Concept", [
-                    OntologyNode("Mathematical Concept"),
-                    OntologyNode("Philosophical Concept")
-                ])
-            ])
-        ])
+# For older Streamlit versions or custom tree
+def create_custom_ontology_tree():
+    """Create ontology with custom HTML/CSS tree"""
+    
+    ontology_html = """
+    <style>
+    .tree {
+        font-family: Arial, sans-serif;
+        margin-left: 20px;
     }
-
-def render_interactive_ontology(node_dict, level=0):
-    """Render interactive ontology with toggle buttons"""
-    for key, node in node_dict.items():
-        # Create unique key for each node
-        node_key = f"node_{key}_{level}_{id(node)}"
+    .tree-node {
+        margin: 5px 0;
+        cursor: pointer;
+    }
+    .tree-node:hover {
+        background-color: #f0f0f0;
+    }
+    .tree-children {
+        margin-left: 20px;
+        display: none;
+    }
+    .tree-children.expanded {
+        display: block;
+    }
+    .toggle-btn {
+        display: inline-block;
+        width: 20px;
+        text-align: center;
+        cursor: pointer;
+        user-select: none;
+    }
+    .node-name {
+        display: inline-block;
+        padding: 2px 5px;
+    }
+    .node-name.parent {
+        font-weight: bold;
+    }
+    </style>
+    
+    <div class="tree" id="ontologyTree">
+        <div class="tree-node" onclick="toggleNode(this)">
+            <span class="toggle-btn">▶</span>
+            <span class="node-name parent">Thing</span>
+            <div class="tree-children">
+                <div class="tree-node" onclick="toggleNode(this)">
+                    <span class="toggle-btn">▶</span>
+                    <span class="node-name parent">Physical Object</span>
+                    <div class="tree-children">
+                        <div class="tree-node" onclick="toggleNode(this)">
+                            <span class="toggle-btn">▶</span>
+                            <span class="node-name parent">Living Thing</span>
+                            <div class="tree-children">
+                                <div class="tree-node">Animal</div>
+                                <div class="tree-node">Plant</div>
+                            </div>
+                        </div>
+                        <div class="tree-node" onclick="toggleNode(this)">
+                            <span class="toggle-btn">▶</span>
+                            <span class="node-name parent">Non-living Thing</span>
+                            <div class="tree-children">
+                                <div class="tree-node">Mineral</div>
+                                <div class="tree-node">Artifact</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="tree-node" onclick="toggleNode(this)">
+                    <span class="toggle-btn">▶</span>
+                    <span class="node-name parent">Abstract Entity</span>
+                    <div class="tree-children">
+                        <div class="tree-node">Idea</div>
+                        <div class="tree-node" onclick="toggleNode(this)">
+                            <span class="toggle-btn">▶</span>
+                            <span class="node-name parent">Concept</span>
+                            <div class="tree-children">
+                                <div class="tree-node">Mathematical Concept</div>
+                                <div class="tree-node">Philosophical Concept</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+    function toggleNode(element) {
+        var children = element.querySelector('.tree-children');
+        var toggleBtn = element.querySelector('.toggle-btn');
         
-        # Create columns for layout
-        cols = st.columns([1, 1, 4])
-        
-        with cols[0]:
-            # Toggle button for expand/collapse
-            if node.children:
-                if st.button("▼" if node.expanded else "▶", key=f"toggle_{node_key}"):
-                    node.expanded = not node.expanded
-                    st.rerun()
-        
-        with cols[1]:
-            st.write("  " * level + "•")
-        
-        with cols[2]:
-            # Node name with styling
-            st.markdown(f"**{node.name}**" if node.children else f"  {node.name}")
-        
-        # Render children if expanded
-        if node.expanded and node.children:
-            for child in node.children:
-                render_interactive_ontology({child.name: child}, level + 1)
+        if (children) {
+            if (children.classList.contains('expanded')) {
+                children.classList.remove('expanded');
+                toggleBtn.textContent = '▶';
+            } else {
+                children.classList.add('expanded');
+                toggleBtn.textContent = '▼';
+            }
+        }
+    }
+    
+    // Initialize all nodes
+    document.querySelectorAll('.tree-node').forEach(node => {
+        if (node.querySelector('.tree-children')) {
+            node.style.cursor = 'pointer';
+        }
+    });
+    </script>
+    """
+    
+    return ontology_html
 
 def main():
-    st.set_page_config(layout="wide")
-    st.title("Interactive Ontology Viewer")
+    st.title("Ontology Tree with Custom HTML/JS")
     
-    # Initialize ontology in session state
-    if 'ontology' not in st.session_state:
-        st.session_state.ontology = create_ontology_structure()
+    # Option to use custom HTML
+    use_custom = st.checkbox("Use Custom HTML Tree", value=True)
     
-    # Sidebar controls
-    with st.sidebar:
-        st.header("Controls")
-        
-        if st.button("Expand All"):
-            def expand_all(node_dict):
-                for node in node_dict.values():
-                    node.expanded = True
-                    if node.children:
-                        expand_all({child.name: child for child in node.children})
-            expand_all(st.session_state.ontology)
-            st.rerun()
-        
-        if st.button("Collapse All"):
-            def collapse_all(node_dict):
-                for node in node_dict.values():
-                    node.expanded = False
-                    if node.children:
-                        collapse_all({child.name: child for child in node.children})
-            collapse_all(st.session_state.ontology)
-            st.rerun()
-        
-        st.divider()
-        
-        # Search functionality
-        st.subheader("Search")
-        search_term = st.text_input("Search concepts")
-        
-        if search_term:
-            st.info(f"Searching for: {search_term}")
-    
-    # Main content
-    col1, col2 = st.columns([2, 1])
-    
-    with col1:
-        st.subheader("Ontology Tree")
-        render_interactive_ontology(st.session_state.ontology)
-    
-    with col2:
-        st.subheader("Node Details")
-        st.info("Click on nodes to see details")
-        
-        # Add some metadata display
-        st.markdown("""
-        **Legend:**
-        - ▶ : Collapsed node (click to expand)
-        - ▼ : Expanded node (click to collapse)
-        - **Bold**: Parent node with children
-        - Normal: Leaf node
-        """)
+    if use_custom:
+        # Embed custom HTML
+        components.html(create_custom_ontology_tree(), height=500)
+    else:
+        # Fallback to simple expander method
+        st.subheader("Simple Ontology")
+        with st.expander("Thing", expanded=False):
+            with st.expander("Physical Object", expanded=False):
+                with st.expander("Living Thing", expanded=False):
+                    st.write("• Animal")
+                    st.write("• Plant")
+                with st.expander("Non-living Thing", expanded=False):
+                    st.write("• Mineral")
+                    st.write("• Artifact")
+            with st.expander("Abstract Entity", expanded=False):
+                st.write("• Idea")
+                with st.expander("Concept", expanded=False):
+                    st.write("• Mathematical Concept")
+                    st.write("• Philosophical Concept")
 
 if __name__ == "__main__":
     main()
